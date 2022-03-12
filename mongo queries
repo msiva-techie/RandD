@@ -1,0 +1,710 @@
+deployment-collection:
+
+{
+	"_id" : ObjectId("5f5625849c2d7403c3b7b840"),
+	"deploymentId" : "g02eumVHug",
+	"packagePath" : "Packages/PKG_EPE-23858_enh-dev_FUewsHKm",
+	"status" : "success",
+	"logs" : "",
+	"metaData" : {
+		"env" : {
+			
+		},
+		"defectId" : [
+			"EPE-23858"
+		],
+		"jobName" : "enh-dev_1",
+		"buildNumber" : "919",
+		"commitId" : [
+			"861f3ea039cb97d73b136414c10ffe547cd6bd76",
+			"9b5b24cf7434769d6221108b929a66ac00516d08",
+			"86c27ad39c5c32291c2c867cf48bfa4e41d65006"
+		],
+		"packageId" : "PKG_EPE-23858_enh-dev_FUewsHKm",
+		"mergeId" : "86c27ad39c5c32291c2c867cf48bfa4e41d65006",
+		"branchName" : "enh-dev"
+	},
+	"timeStamp" : ISODate("2020-09-07T12:20:16.679Z")
+},
+...,
+...
+
+
+package-collection:
+
+{
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	"packageId" : "PKG_EPE-23858_enh-dev_FUewsHKm",
+	"repository" : "blgt-packages-enh-dev",
+	"destination" : "Packages/PKG_EPE-23858_enh-dev_FUewsHKm",
+	"filePath" : [
+		"01-Source/LM/RM/Sproc/Appln/LMManQuo_Sp_ServceHRef.sql",
+		"01-Source/LM/RM/Sproc/Appln/LMManRfq_Sp_ServieHRef.sql"
+	],
+	"metaData" : {
+		"defectId" : [
+			"EPE-23858"
+		],
+		"jobName" : "enh-dev_1",
+		"buildNumber" : "919",
+		"descriptorId" : "FUewsHKm",
+		"commitId" : [
+			"861f3ea039cb97d73b136414c10ffe547cd6bd76",
+			"9b5b24cf7434769d6221108b929a66ac00516d08",
+			"86c27ad39c5c32291c2c867cf48bfa4e41d65006"
+		],
+		"packageId" : "PKG_EPE-23858_enh-dev_FUewsHKm",
+		"includedPreviousCommitId" : "true",
+		"repositoryName" : "blgt",
+		"branch" : "enh-dev",
+		"mergeId" : "86c27ad39c5c32291c2c867cf48bfa4e41d65006"
+	},
+	"callbackUrl" : null,
+	"mergeId" : "86c27ad39c5c32291c2c867cf48bfa4e41d65006",
+	"timeStamp" : ISODate("2020-09-07T12:20:16.136Z")
+},
+...,
+...
+
+
+
+
+
+
+1. Aggregate query to get defect ids in a pipeline
+
+QUERY:
+
+ db["package-collection"].aggregate([
+ {
+	 $match:{
+	 	"metaData.jobName":"V3.188-Controlled_1"
+	 }
+ },
+ {
+ 	$unwind:"$metaData.defectId"
+ },
+ {
+ 	$group:{
+ 		_id:"$metaData.jobName",
+ 		defectIds: {
+			$addToSet:"$metaData.defectId"    
+			// $push pushes duplicate values whereas $addToSet pushes unique elements
+ 		}
+ 	}
+ }
+]).pretty()
+
+OUTPUT:
+
+{
+	"_id" : "V3.188-Controlled_1",
+	"defectIds" : [
+		"CKBW2-1223",
+		"EPE-23022",
+		"NIE-320",
+		"EPE-23320",
+		"EPE-23888",
+		"EPE-23856",
+		"LUE-1098",
+		"EPE-23847",
+		"EPE-23141",
+		"nie-355",
+		"EPE-23451",
+		"EPE-22665",
+		"EPE-22849",
+		"EPE-23716",
+		...
+		]
+}
+
+2. To get all the filePath as an array
+
+QUERY:
+
+db["package-collection"].aggregate([
+{
+	$match: {
+		"metaData.jobName":"V3.188-Controlled_1", 
+		filePath: {
+			$nin:[/Release/]
+		}, 
+		timeStamp:{
+			$gte:ISODate("2019-12-12T10:56:59.147Z"), 
+			$lte:ISODate("2020-12-12T10:56:59.147Z")}
+		}
+	}
+},
+{
+	$unwind:"$filePath"
+},
+{
+	$group:{
+		"_id":null,
+		filePath:{
+			$addToSet:"$filePath"
+		}
+	}
+},
+{
+	$project:{
+		_id:0,
+		filePath:"$filePath"
+	}
+}]).pretty()
+
+OUTPUT:
+
+{
+	"filePath" : [
+		"01-Source/TMSSetup/BRO/Ctmvdrres_sr_licens.netmodule",
+		"01-Source/WMACTIVITY/Rm/Sproc/Appln/VERT_ORDER_LINE_FILL_RATE_1.sql",
+		"01-Source/Patches/Patches_Mandatory/Appln/EPE-22215_01.sql",
+		"01-Source/TMS_EXECUTION/BRO/Ctmetrplog_sr_send_e.netmodule",
+		"01-Source/LgtAdmin/BRO/Cwhr_cu_ser_attach.netmodule",
+		"01-Source/LGT_Contract_Billing/Rm/Sproc/Appln/LGB_TarRe_Sp_TrfAp_typ.sql",
+		"01-Source/LgtAdmin/BRO/Cwhr_cu_ser_rscoui.netmodule",
+		"01-Source/HubManagement/BRO/Chubmain20_sr_get_hd.netmodule",
+		"01-Source/HubManagement/BRO/Chubvwhinv_sr_init.netmodule",
+		"01-Source/LgtAdmin/BRO/Cwhr_cnsge_ser_fet.netmodule",
+		"01-Source/TMS_EXECUTION/BRO/Ctmetriplg_srdiscre.netmodule",
+		"01-Source/TMSACTIVITY/BRO/Ctma_mains1_sr_ex_sav.netmodule",
+		"01-Source/TMSACTIVITY/Rm/Sproc/Appln/TMA_HLPRUN_Sp_SearchHlp_Gr_O.SQL",
+		"01-Source/TMS_EXECUTION/BRO/Ctmetriplg_sr_pkprnt.netmodule",
+		...
+	]
+}
+
+3. To get size of the filePath array
+
+QUERY:
+
+db["package-collection"].aggregate([
+{
+	$match: {
+			"metaData.jobName":"V3.188-Controlled_1", 
+			filePath: {$nin:[/Release/]}, 
+			timeStamp:{
+				$gte:ISODate("2019-12-12T10:56:59.147Z"), 
+				$lte:ISODate("2020-12-12T10:56:59.147Z")
+			}
+	}
+},
+{
+	$unwind:"$filePath"
+},
+{
+	$group: {
+		"_id":null,
+		filePath: {
+			$push:"$filePath"
+		}
+	}
+},
+{
+	$project: {
+		_id:0,
+		filesCount: {
+			$size:"$filePath"
+		}
+	}
+}]).pretty()
+
+OUTPUT:
+
+{ 
+	"filesCount" : 37834 
+}
+
+
+4. To get all the distinct filepath in package collection
+
+QUERY:
+
+db["package-collection"].distinct("filePath", {
+	"metaData.jobName":"V3.188-Controlled_1", 
+	filePath: {$nin:[/Release/]}, 
+	timeStamp: {
+		$gte:ISODate("2019-12-12T10:56:59.147Z"), 
+		$lte:ISODate("2020-09-12T10:56:59.147Z")
+	}
+})
+
+OUTPUT:
+
+[
+	"01-Source/Application_Images/Virtualworks/IIS/EXTUI/DTM_triplog/DRIVER_TRIP_MOBILE.zip",
+	"01-Source/Application_Images/Virtualworks/IIS/EXTUI/THT_hub/TMS_HHT.zip",
+	"01-Source/BulkDataUpload/Rm/Sproc/Appln/BDUmainsc_Sp_fet_HdrFet.SQL",
+	"01-Source/BulkDataUpload/Rm/Sproc/Appln/RB_IONDO_BULK_UPLOAD_GET_UPLOADED_FILE_LIST_SP.sql",
+	"01-Source/BulkDataUpload/Rm/Sproc/Appln/RB_IONDO_BULK_UPLOAD_WRAPPER_SP.sql",
+	"01-Source/CUSTMNGMT/Rm/Sproc/Appln/CMGmainsc_Sp_Book_rbook_mSpo.sql",
+	"01-Source/CUSTMNGMT/Rm/Sproc/Appln/CMGmainsc_Sp_Seria_serianSpo.sql",
+	"01-Source/CUSTMNGMT/Rm/Sproc/Appln/CMGmainsc_Sp_bookon_hrf.sql",
+	"01-Source/CUSTMNGMT/Rm/Sproc/Appln/CMGmainsc_Sp_bookonbook_mSpo.sql",
+	"01-Source/CUSTMNGMT/Rm/Sproc/Appln/CMGmainsc_Sp_booksa_HSav.sql",
+	"01-Source/CUSTMNGMT/Rm/Sproc/Appln/CMGmainsc_Sp_booksa_hrf.sql",
+	"01-Source/CUSTMNGMT/Rm/Sproc/Appln/CMGmainsc_Sp_booksabook_mSpo.sql",
+	"01-Source/CUSTMNGMT/Rm/Sproc/Appln/CMGmainsc_Sp_initbookrr.sql",
+	"01-Source/CUSTMNGMT/Rm/Sproc/Appln/CMGmainsc_Sp_quicksave_HSav.sql",
+	"01-Source/DRIVER_TRIP_MOBILE/BRO/Cdtm_download_tms_data_srv.netmodule",
+	"01-Source/DRIVER_TRIP_MOBILE/BRO/Cdtm_download_tms_srv.netmodule",
+	...
+]
+
+5. To get size of the distinct query
+
+QUERY:
+
+db["package-collection"].distinct("filePath", { "metaData.jobName":"V3.188-Controlled_1",  filePath: {$nin:[/Release/]},  timeStamp: { $gte:ISODate("2019-12-12T10:56:59.147Z"),  $lte:ISODate("2020-09-12T10:56:59.147Z") } }).length
+
+OUTPUT:
+
+4607
+
+6. Adding filePath from package collection with deployment collection
+
+QUERY:
+
+db["deployment-collection"].aggregate([
+{
+	$match: {
+		"metaData.defectId":"EPE-23858", 
+		"metaData.buildNumber":"919"
+	}
+},
+{
+	$lookup: {
+		from: "package-collection", 
+		localField:"metaData.packageId", 
+		foreignField:"metaData.packageId",
+		as: "package-data"
+	}
+},
+{
+	$unwind:"$package-data"
+},
+{
+	$project: {
+		"defectId": "$metaData.defectId",
+		"filePath": "$package-data.filePath", 
+		"status": 1, 
+		"jobName": "$metaData.jobName", 
+		"buildNumber": "$metaData.buildNumber", 
+		"timeStamp":1 
+	}
+}
+]).pretty()
+
+
+OUTPUT:
+
+{
+	"_id" : ObjectId("5f5625849c2d7403c3b7b840"),
+	"status" : "success",
+	"timeStamp" : ISODate("2020-09-07T12:20:16.679Z"),
+	"defectId" : [
+		"EPE-23858"
+	],
+	"filePath" : [
+		"01-Source/LM/RM/Sproc/Appln/LMManQuo_Sp_ServceHRef.sql",
+		"01-Source/LM/RM/Sproc/Appln/LMManRfq_Sp_ServieHRef.sql"
+	],
+	"jobName" : "enh-dev_1",
+	"buildNumber" : "919"
+}
+
+7. Join using condition and add additional fields from joined collection
+
+QUERY:
+
+db["deployment-collection"].aggregate([
+{
+	$match: {
+		"metaData.defectId":"EPE-23858", 
+		"metaData.buildNumber":"919"
+	}
+},
+{
+	$lookup: {
+		from: "package-collection", 
+		let: {
+			"packageId":"$metaData.packageId"
+		},
+		pipeline: [
+		{	$match:
+			{
+				$expr: {
+					$eq: ["$metaData.packageId","$$packageId"]
+					// $$ is used to access variables declared in let
+				}
+			}
+		}
+		],
+		as: "package-data"
+	}
+},
+{
+	$addFields: {
+		filePath: { 
+			$arrayElemAt: ["$package-data.filePath",0]
+		}
+	}
+}
+]).pretty()
+
+OUTPUT:
+
+{
+	"_id" : ObjectId("5f5625849c2d7403c3b7b840"),
+	"deploymentId" : "g02eumVHug",
+	"packagePath" : "Packages/PKG_EPE-23858_enh-dev_FUewsHKm",
+	"status" : "success",
+	"logs" : "",
+	"metaData" : {
+		"env" : {
+			
+		},
+		"defectId" : [
+			"EPE-23858"
+		],
+		"jobName" : "enh-dev_1",
+		"buildNumber" : "919",
+		"commitId" : [
+			"861f3ea039cb97d73b136414c10ffe547cd6bd76",
+			"9b5b24cf7434769d6221108b929a66ac00516d08",
+			"86c27ad39c5c32291c2c867cf48bfa4e41d65006"
+		],
+		"packageId" : "PKG_EPE-23858_enh-dev_FUewsHKm",
+		"mergeId" : "86c27ad39c5c32291c2c867cf48bfa4e41d65006",
+		"branchName" : "enh-dev"
+	},
+	"timeStamp" : ISODate("2020-09-07T12:20:16.679Z"),
+	"package-data" : [
+		{
+			"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+			"packageId" : "PKG_EPE-23858_enh-dev_FUewsHKm",
+			"repository" : "blgt-packages-enh-dev",
+			"destination" : "Packages/PKG_EPE-23858_enh-dev_FUewsHKm",
+			"filePath" : [
+				"01-Source/LM/RM/Sproc/Appln/LMManQuo_Sp_ServceHRef.sql",
+				"01-Source/LM/RM/Sproc/Appln/LMManRfq_Sp_ServieHRef.sql"
+			],
+			"metaData" : {
+				"defectId" : [
+					"EPE-23858"
+				],
+				"jobName" : "enh-dev_1",
+				"buildNumber" : "919",
+				"descriptorId" : "FUewsHKm",
+				"commitId" : [
+					"861f3ea039cb97d73b136414c10ffe547cd6bd76",
+					"9b5b24cf7434769d6221108b929a66ac00516d08",
+					"86c27ad39c5c32291c2c867cf48bfa4e41d65006"
+				],
+				"packageId" : "PKG_EPE-23858_enh-dev_FUewsHKm",
+				"includedPreviousCommitId" : "true",
+				"repositoryName" : "blgt",
+				"branch" : "enh-dev",
+				"mergeId" : "86c27ad39c5c32291c2c867cf48bfa4e41d65006"
+			},
+			"callbackUrl" : null,
+			"mergeId" : "86c27ad39c5c32291c2c867cf48bfa4e41d65006",
+			"timeStamp" : ISODate("2020-09-07T12:20:16.136Z")
+		}
+	],
+	"filePath" : [
+		"01-Source/LM/RM/Sproc/Appln/LMManQuo_Sp_ServceHRef.sql",
+		"01-Source/LM/RM/Sproc/Appln/LMManRfq_Sp_ServieHRef.sql"
+	]
+}
+
+8. Eliminate unwanted joined data and taking the required one.
+
+QUERY:
+
+db["deployment-collection"].aggregate([
+{
+	$match: {
+		"metaData.defectId":"EPE-23858", 
+		"metaData.buildNumber":"919"
+	}
+},
+{
+	$lookup: {
+		from: "package-collection", 
+		let: {
+			"packageId": "$metaData.packageId"
+		}, 
+		pipeline:
+		[{
+		$match: {
+			$expr: { 
+				$eq: ["$metaData.packageId", "$$packageId"]
+			}
+		}
+		}], 
+		as: "package-data"
+	}
+},
+{
+	$addFields: {
+		filePath: {
+			$arrayElemAt: ["$package-data.filePath", 0]
+		}
+	}
+}, 
+{
+	$project: {
+		"package-data": 0
+	}
+}
+]).pretty()
+
+OUTPUT:
+
+{
+	"_id" : ObjectId("5f5625849c2d7403c3b7b840"),
+	"deploymentId" : "g02eumVHug",
+	"packagePath" : "Packages/PKG_EPE-23858_enh-dev_FUewsHKm",
+	"status" : "success",
+	"logs" : "",
+	"metaData" : {
+		"env" : {
+			
+		},
+		"defectId" : [
+			"EPE-23858"
+		],
+		"jobName" : "enh-dev_1",
+		"buildNumber" : "919",
+		"commitId" : [
+			"861f3ea039cb97d73b136414c10ffe547cd6bd76",
+			"9b5b24cf7434769d6221108b929a66ac00516d08",
+			"86c27ad39c5c32291c2c867cf48bfa4e41d65006"
+		],
+		"packageId" : "PKG_EPE-23858_enh-dev_FUewsHKm",
+		"mergeId" : "86c27ad39c5c32291c2c867cf48bfa4e41d65006",
+		"branchName" : "enh-dev"
+	},
+	"timeStamp" : ISODate("2020-09-07T12:20:16.679Z"),
+	"filePath" : [
+		"01-Source/LM/RM/Sproc/Appln/LMManQuo_Sp_ServceHRef.sql",
+		"01-Source/LM/RM/Sproc/Appln/LMManRfq_Sp_ServieHRef.sql"
+	]
+}
+
+9. Update documents with a new field which concats value from existing field
+
+Data:
+
+{
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	"packageId" : "PKG_EPE-23858_enh-dev_FUewsHKm",
+	"filePath" : [
+		"01-Source/LM/RM/Sproc/Appln/LMManQuo_Sp_ServceHRef.sql",
+		"01-Source/LM/RM/Sproc/Appln/LMManRfq_Sp_ServieHRef.sql"
+	],
+	"timeStamp" : ISODate("2020-09-07T12:20:16.136Z"),
+}
+
+
+QUERY: 
+
+Note: Use updateMany({}, [<pipeline>]) to update all documents
+
+db["package-collection"].update(
+{ 
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31")
+},
+[
+	{
+		$set:
+		{
+			filePathNew:
+			{
+				$map: {
+					 input:"$filePath",
+					 as:"f",
+					 in: {
+					 	$concat:["$$f"," => sql file"]
+					 	// $$ is used to access variables declared in "as"
+					 }
+				}
+			}
+		}
+	}
+])
+
+
+OUTPUT:
+
+{
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	"packageId" : "PKG_EPE-23858_enh-dev_FUewsHKm",
+	"filePath" : [
+		"01-Source/LM/RM/Sproc/Appln/LMManQuo_Sp_ServceHRef.sql",
+		"01-Source/LM/RM/Sproc/Appln/LMManRfq_Sp_ServieHRef.sql"
+	],
+	"timeStamp" : ISODate("2020-09-07T12:20:16.136Z"),
+	"filePathNew" : [
+		"01-Source/LM/RM/Sproc/Appln/LMManQuo_Sp_ServceHRef.sql => sql file",
+		"01-Source/LM/RM/Sproc/Appln/LMManRfq_Sp_ServieHRef.sql => sql file"
+	]
+}
+
+10. Update new field with sum of existing array field.
+
+data:
+
+{	"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	"total" : [
+		1,
+		2,
+		3,
+		4,
+		5,
+		6,
+		7,
+		8,
+		9,
+		0
+	]
+}
+
+QUERY:
+
+db["package-collection"].update(update(
+{ 
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31")
+}
+,[
+{
+	$set: {
+		totalCount: {
+			$reduce: {
+				input: "$total", 
+				initialValue:0, 
+				in: {
+					$sum: ["$$value","$$this"]
+				}
+			}
+		}
+	}
+}
+])
+
+OUTPUT:
+
+{	
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	"total" : [
+		1,
+		2,
+		3,
+		4,
+		5,
+		6,
+		7,
+		8,
+		9,
+		0
+	],
+	"totalCount" : 45
+}
+
+11. Update first occurence of a element with given value in an array
+
+data: 
+
+{	
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	"total" : [
+		1,
+		2,
+		3,
+		4,
+		14,
+		14
+		15
+	]
+}
+
+QUERY:
+
+db["package-collection"].update(
+ {
+	 "_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	 "total":14
+ },
+ {
+ 	$set: {
+ 		"total.$":19
+ 	}
+ }
+)
+
+OUTPUT:
+
+{	
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	"total" : [
+		1,
+		2,
+		3,
+		4,
+		19,
+		14
+		15
+	]
+}
+
+12. Update all occurence of a element with given value in an array
+
+data: 
+
+{	
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	"total" : [
+		1,
+		2,
+		3,
+		4,
+		14,
+		14
+		15
+	]
+}
+
+QUERY:
+
+db["package-collection"].update(
+ {
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	 "total":14
+ },
+ {
+ 	$set: {
+ 		"total.$[element]":19
+ 	}
+ },
+ {
+ 	multi:true,
+ 	arrayFilters:[{element:14}]
+ }
+)
+
+OUTPUT:
+
+{	
+	"_id" : ObjectId("5f5625809d0b222c16fb7c31"),
+	"total" : [
+		1,
+		2,
+		3,
+		4,
+		19,
+		19
+		15
+	]
+}
